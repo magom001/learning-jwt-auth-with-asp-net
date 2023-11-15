@@ -49,7 +49,7 @@ public class WeatherForecastController : ControllerBase
         return this.Ok(new AccessTokenDto(token));
     }
 
-    [JwtAuth]
+    [JwtAuth(Roles = new[] { "admin" })]
     [HttpGet("protected")]
     public OkObjectResult ProtectedGet()
     {

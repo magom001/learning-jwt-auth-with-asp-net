@@ -8,35 +8,54 @@ static class JwtAuthorizationMiddleware
             async (context, next) =>
             {
                 // Let's see if our endpoint is annotated with our custom JwtAuthAttribute
-                var isAnnotatedWithJwtAuthAttribute =
+                var jwtAuthAnnotation =
                     context.Features
                         .Get<IEndpointFeature>()
-                        ?.Endpoint?.Metadata.Any(m => m is JwtAuthAttribute) ?? false;
+                        ?.Endpoint?.Metadata.FirstOrDefault(m => m is JwtAuthAttribute)
+                    as JwtAuthAttribute;
 
-                if (isAnnotatedWithJwtAuthAttribute)
+                if (jwtAuthAnnotation is not null)
                 {
-                    var currentUserJwtPayload = context.Items["x-current-user"];
+                    var currentUserJwtPayload = context.Items["x-current-user"] as JwtTokenPayload;
 
-                    if (currentUserJwtPayload is JwtTokenPayload)
+                    if (currentUserJwtPayload is null)
                     {
-                        await next.Invoke();
+                        await Fail(context);
                         return;
                     }
 
-                    context.Response.ContentType = "text/plain";
-                    context.Response.StatusCode = 401;
-                    await context.Response.WriteAsync("Unauthorized");
-                    return;
+                    if (jwtAuthAnnotation.Roles?.Any() == true)
+                    {
+                        var currentUserRoles = currentUserJwtPayload
+                            .AppMetadata
+                            ?.Authorization
+                            ?.Roles;
+
+                        if (currentUserRoles is null || !currentUserRoles.Any())
+                        {
+                            await Fail(context);
+                            return;
+                        }
+
+                        if (!jwtAuthAnnotation.Roles.Any(role => currentUserRoles.Contains(role)))
+                        {
+                            await Fail(context);
+                            return;
+                        }
+                    }
                 }
 
-                Console.WriteLine(
-                    "This is invoked before the controller and after the JwtAuthenticationMiddleware"
-                );
                 await next.Invoke();
-                Console.WriteLine("And this is invoked after the controller's body");
             }
         );
 
         return app;
+    }
+
+    private static async Task Fail(HttpContext context)
+    {
+        context.Response.ContentType = "text/plain";
+        context.Response.StatusCode = 401;
+        await context.Response.WriteAsync("Unauthorized");
     }
 }

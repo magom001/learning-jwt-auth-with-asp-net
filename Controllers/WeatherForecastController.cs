@@ -7,6 +7,18 @@ namespace jwt_knowledge_sharing.Controllers;
 [Route("api")]
 public class WeatherForecastController : ControllerBase
 {
+    private readonly ILogger<WeatherForecastController> logger;
+    private readonly IJwtAuthenticationService jwtAuthService;
+
+    public WeatherForecastController(
+        IJwtAuthenticationService jwtAuthService,
+        ILogger<WeatherForecastController> logger
+    )
+    {
+        this.logger = logger;
+        this.jwtAuthService = jwtAuthService;
+    }
+
     private static readonly string[] Summaries = new[]
     {
         "Freezing",
@@ -21,11 +33,20 @@ public class WeatherForecastController : ControllerBase
         "Scorching"
     };
 
-    private readonly ILogger<WeatherForecastController> _logger;
-
-    public WeatherForecastController(ILogger<WeatherForecastController> logger)
+    [HttpPost("login")]
+    public IActionResult Login(LoginDto loginDto)
     {
-        _logger = logger;
+        var token = this.jwtAuthService.AuthenticateByUsernameAndPassword(
+            loginDto.username,
+            loginDto.password
+        );
+
+        if (token is null)
+        {
+            return this.Unauthorized();
+        }
+
+        return this.Ok(new AccessTokenDto(token));
     }
 
     [JwtAuth]

@@ -11,6 +11,9 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<AddRequiredJwtHeaderParameter>();
 });
 
+builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IJwtAuthenticationService, JwtAuthenticationService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

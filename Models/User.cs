@@ -1,1 +1,1 @@
-public record User(string username);
+public record User(string Username, string[]? Roles = null);

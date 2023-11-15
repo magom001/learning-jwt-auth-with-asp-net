@@ -5,7 +5,8 @@ class UserService : IUserService
         User
     >()
     {
-        { ("admin", "pa$$word"), new User("admin") }
+        { ("admin", "pa$$word"), new User("admin", new[] { "admin" }) },
+        { ("user", "pa$$word"), new User("user") }
     };
 
     public User? FindUserByUsernameAndPassword(string username, string password)

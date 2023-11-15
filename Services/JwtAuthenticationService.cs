@@ -64,10 +64,11 @@ IPXWyTm+7YgwoxCJrlNqzN5tbPMgJQf0QemqyQNJEU2jgNPYNLEMJ+1Q747+zVTv
             .Create()
             .WithAlgorithm(this.algorithm)
             .AddClaim(
-                "exp",
+                ClaimName.ExpirationTime,
                 DateTimeOffset.UtcNow.AddHours(JWT_TOKEN_VALIDITY_IN_HOURS).ToUnixTimeSeconds()
             )
-            .AddClaim("sub", username)
+            .AddClaim(ClaimName.Subject, username)
+            .AddClaim("app_metadata", new AppMetadata(new AuthorizationRoles(user.Roles)))
             .Encode();
 
         return token;

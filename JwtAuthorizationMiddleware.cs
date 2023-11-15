@@ -15,6 +15,14 @@ static class JwtAuthorizationMiddleware
 
                 if (isAnnotatedWithJwtAuthAttribute)
                 {
+                    var currentUserJwtPayload = context.Items["x-current-user"];
+
+                    if (currentUserJwtPayload is JwtTokenPayload)
+                    {
+                        await next.Invoke();
+                        return;
+                    }
+
                     context.Response.ContentType = "text/plain";
                     context.Response.StatusCode = 401;
                     await context.Response.WriteAsync("Unauthorized");

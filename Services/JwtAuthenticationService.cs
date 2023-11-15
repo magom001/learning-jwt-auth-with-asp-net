@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 using JWT.Algorithms;
 using JWT.Builder;
 
@@ -30,12 +31,16 @@ IPXWyTm+7YgwoxCJrlNqzN5tbPMgJQf0QemqyQNJEU2jgNPYNLEMJ+1Q747+zVTv
 -----END PUBLIC KEY-----";
 
     private const int JWT_TOKEN_VALIDITY_IN_HOURS = 1;
-
+    private readonly ILogger<JwtAuthenticationService> logger;
     private readonly IUserService userService;
     private readonly RS1024Algorithm algorithm;
 
-    public JwtAuthenticationService(IUserService userService)
+    public JwtAuthenticationService(
+        IUserService userService,
+        ILogger<JwtAuthenticationService> logger
+    )
     {
+        this.logger = logger;
         this.userService = userService;
 
         var privateKey = RSA.Create();
@@ -66,5 +71,25 @@ IPXWyTm+7YgwoxCJrlNqzN5tbPMgJQf0QemqyQNJEU2jgNPYNLEMJ+1Q747+zVTv
             .Encode();
 
         return token;
+    }
+
+    public JwtTokenPayload? DecryptJwtToken(string token)
+    {
+        try
+        {
+            var jsonString = JwtBuilder
+                .Create()
+                .WithAlgorithm(this.algorithm)
+                .MustVerifySignature()
+                .Decode(token);
+
+            return JsonSerializer.Deserialize<JwtTokenPayload>(jsonString);
+        }
+        catch (Exception e)
+        {
+            this.logger.LogError("Failed to decrypt JWT token. Exception: {e}", e);
+
+            return null;
+        }
     }
 }

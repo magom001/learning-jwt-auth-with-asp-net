@@ -25,7 +25,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseJwtAuthentication();
+app.UseMiddleware<JwtAuthenticationMiddleware>();
 
 app.UseJwtAuthorization();
 

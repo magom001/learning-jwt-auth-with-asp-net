@@ -1,19 +1,34 @@
-static class JwtAuthenticationMiddleware
+class JwtAuthenticationMiddleware
 {
-    public static IApplicationBuilder UseJwtAuthentication(this IApplicationBuilder app)
-    {
-        app.Use(
-            async (context, next) =>
-            {
-                context.Request.Headers.TryGetValue("x-authorization", out var value);
-                Console.WriteLine(
-                    $"This is invoked before the controller. Authorization header value is {value}"
-                );
-                await next.Invoke();
-                Console.WriteLine("And this is invoked after the controller's body");
-            }
-        );
+    private readonly RequestDelegate next;
 
-        return app;
+    public JwtAuthenticationMiddleware(RequestDelegate next)
+    {
+        this.next = next;
+    }
+
+    public async Task InvokeAsync(HttpContext context, IJwtAuthenticationService authService)
+    {
+        context.Request.Headers.TryGetValue("x-authorization", out var authHeaders);
+        var authHeader = authHeaders.FirstOrDefault<string>("");
+
+        if (string.IsNullOrEmpty(authHeader))
+        {
+            await this.next(context);
+            return;
+        }
+
+        var token = authHeader.Split(" ").Last();
+
+        if (token is null)
+        {
+            await this.next(context);
+            return;
+        }
+
+        var jwtTokenPayload = authService.DecryptJwtToken(token);
+
+        context.Items.Add("x-current-user", jwtTokenPayload);
+        await this.next(context);
     }
 }
